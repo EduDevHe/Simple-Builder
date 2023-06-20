@@ -14,6 +14,19 @@ data_json = {
 file_name = "simple_builder.json"
 file_path = os.path.join(os.getcwd(), file_name)
 
+green_color = '\033[92m'
+red_color = '\033[91m'
+
+
+def notification(message, color):
+
+    return print(color+message+color)
+
+
+def init():
+
+    return
+
 
 def file_exists(file_path):
     if os.path.exists(file_path):
@@ -38,7 +51,7 @@ def get_json_file(file_name, file_path, data_json):
 
 
 if len(sys.argv) < 2:
-    print("\033[31mErro: 0 argumentos de 1\033[0m")
+    notification("Erro: 0 argumento de 1", red_color)
     time.sleep(2)
     sys.exit(1)
 

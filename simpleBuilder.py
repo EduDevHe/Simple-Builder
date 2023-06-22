@@ -4,9 +4,11 @@ import os
 import sys
 import time
 import json
-
+import re
+import subprocess
 
 data_json = {
+    "lang": "c",
     "compiler": "gcc",
     "run": "false",
     "dist": "./bin"
@@ -24,7 +26,26 @@ def notification(message, color):
 
 
 def init():
-
+    os.system("clear")
+    data_json["lang"] = input("Language:")
+    time.sleep(1)
+    os.system("clear")
+    data_json["compiler"] = input("Compiler:")
+    time.sleep(1)
+    os.system("clear")
+    data_json["dist"] = input("Dist:")
+    time.sleep(1)
+    os.system("clear")
+    run = input("Run [y/n]:")
+    if run == "y":
+        data_json["run"] = "true"
+    else:
+        if run == "n":
+            data_json["run"] = "false"
+        else:
+            notification("Erro", red_color)
+            time.sleep(2)
+            sys.exit(1)
     return
 
 
@@ -62,17 +83,53 @@ def get_args(args):
 
 args = get_args(sys.argv)
 
-print(args)
 
-if file_exists(file_path):
-    file = get_json_file(file_name)
-    print(file)
-else:
-    make_file(file_name, data_json)
-    file = get_json_file(file_name)
-    print(file)
+def compiler(compiler_data):
+    try:
+        sub_process = subprocess.run(
+            compiler_data, capture_output=True, text=True)
+        sub_process.check_returncode()
+        os.system("clear")
+        print(sub_process.stdout)
+    except subprocess.CalledProcessError as error:
+        notification("Error:"+error.returncode+"\n", red_color)
+        notification(error.stderr, red_color)
+    except Exception as exeption:
+        notification(exeption, red_color)
 
-if "3" in args:
-    print("\n o elemento esta na lista")
+
+if file_exists(file_path) is not True:
+    if args[0] == "init":
+        init()
+        make_file(file_name, data_json)
+
+    else:
+        notification("Erro: need to init", red_color)
+        time.sleep(2)
+        sys.exit(1)
+
+get_extension_file = re.search(r"\.([^.]+)$", args[0]).group(1)
+
+executable = re.match(r"(.+?)(\.[^.]*$|$)", args[0]).group(1)
+
+data_json_file = get_json_file(file_name)
+
+
+if len(sys.argv) < 2 and file_exists(
+        os.path.join(os.getcwd(), args[0])) is not True:
+    notification("Erro: file not found", red_color)
+    time.sleep(2)
+    sys.exit(1)
 else:
-    print("\n não esta")
+    if get_extension_file != data_json_file["lang"]:
+        notification("Erro: file not found", red_color)
+        time.sleep(2)
+        sys.exit(1)
+    else:
+        if get_extension_file == data_json_file["lang"]:
+            sorce_code = ""
+            with open(args[0], "r") as file:
+                sorce_code = file.read()
+            compiler_comand = [data_json_file["compiler"],
+                               "-o", executable, sorce_code]
+            compiler(compiler_comand)

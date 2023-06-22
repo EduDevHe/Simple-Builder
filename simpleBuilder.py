@@ -34,19 +34,16 @@ def file_exists(file_path):
     return False
 
 
-def get_json_file(file_name, file_path, data_json):
-    file = file_exists(file_path)
+def make_file(file_name, data_json):
+    file = open(file_name, "w")
+    json.dump(data_json, file)
+    file.close()
 
+
+def get_json_file(file_name):
     data_file = ""
-    if file:
-        with open(file_name) as file:
-            data_file = json.load(file)
-    else:
-        file = open(file_name, "w")
-        json.dump(data_json, file)
-        file.close()
-        with open(file_name) as file:
-            data_file = json.load(file)
+    with open(file_name) as file:
+        data_file = json.load(file)
     return data_file
 
 
@@ -66,8 +63,14 @@ def get_args(args):
 args = get_args(sys.argv)
 
 print(args)
-file = get_json_file(file_name, file_path, data_json)
-print(file)
+
+if file_exists(file_path):
+    file = get_json_file(file_name)
+    print(file)
+else:
+    make_file(file_name, data_json)
+    file = get_json_file(file_name)
+    print(file)
 
 if "3" in args:
     print("\n o elemento esta na lista")

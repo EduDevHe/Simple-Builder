@@ -6,18 +6,15 @@ import time
 import json
 import re
 import subprocess
+import argparse
 
-data_json = {
-    "lang": "c",
-    "compiler": "gcc",
-    "run": "false",
-    "dist": "./bin"
+json_file_name = "simple_builder.json"
+json_file_path = os.path.join(os.getcwd(), json_file_name)
+
+colors = {
+    "red": "\033[91m",
+    "green": "\033[92m"
 }
-file_name = "simple_builder.json"
-file_path = os.path.join(os.getcwd(), file_name)
-
-green_color = '\033[92m'
-red_color = '\033[91m'
 
 
 def notification(message, color):
@@ -25,28 +22,16 @@ def notification(message, color):
     return print(color+message+color)
 
 
-def init():
+def init_config_file():
     os.system("clear")
-    data_json["lang"] = input("Language:")
     time.sleep(1)
-    os.system("clear")
-    data_json["compiler"] = input("Compiler:")
-    time.sleep(1)
-    os.system("clear")
-    data_json["dist"] = input("Dist:")
-    time.sleep(1)
-    os.system("clear")
-    run = input("Run [y/n]:")
-    if run == "y":
-        data_json["run"] = "true"
-    else:
-        if run == "n":
-            data_json["run"] = "false"
-        else:
-            notification("Erro", red_color)
-            time.sleep(2)
-            sys.exit(1)
-    return
+    data_json = {
+        "lang": "c",
+        "compiler": "gcc",
+        "run": "false",
+        "dist": "./bin"
+    }
+    return data_json
 
 
 def file_exists(file_path):
@@ -68,23 +53,16 @@ def get_json_file(file_name):
     return data_file
 
 
-if len(sys.argv) < 2:
-    notification("Erro: 0 argumento de 1", red_color)
-    time.sleep(2)
-    sys.exit(1)
+def file_in_this_directory(file):
+    return os.path.join(os.getcwd(), file)
 
 
-def get_args(args):
-    arg_list = []
-    for i in range(1, len(args)):
-        arg_list.append(args[i])
-    return arg_list
+def get_extension_file(file):
+
+    return re.search(r"\.([^.]+)$", file).group(1)
 
 
-args = get_args(sys.argv)
-
-
-def compiler(compiler_data):
+def compiler_source(compiler_data):
     try:
         sub_process = subprocess.run(
             compiler_data, capture_output=True, text=True)
@@ -92,44 +70,56 @@ def compiler(compiler_data):
         os.system("clear")
         print(sub_process.stdout)
     except subprocess.CalledProcessError as error:
-        notification("Error:"+error.returncode+"\n", red_color)
-        notification(error.stderr, red_color)
-    except Exception as exeption:
-        notification(exeption, red_color)
+        notification("Error: " + str(error.returncode) + "\n", colors["red"])
+        print(error.stderr)
+    except Exception as exception:
+        print(exception)
 
 
-if file_exists(file_path) is not True:
-    if args[0] == "init":
+def get_executable(file):
+    return re.match(r"(.+?)(\.[^.]*$|$)", file).group(1)
+
+
+def init():
+    config_file = init_config_file()
+    make_file(json_file_name, config_file)
+
+
+def compiler(file):
+    compiler_comand = [get_json_file(json_file_name)["compiler"],
+                       "-o", get_executable(file), file]
+    compiler_source(compiler_comand)
+
+
+parser = argparse.ArgumentParser(description="Simple Builder")
+parser.add_argument("-i", "--init", action="store_true",
+                    help="Initialize Simple Builder")
+parser.add_argument("-f", "--file", help="Compile a file selected")
+
+args = parser.parse_args()
+init_compiler = False
+if len(sys.argv) == 1:
+    parser.print_help()
+    sys.exit(1)
+
+if args.init:
+    try:
         init()
-        make_file(file_name, data_json)
-
-    else:
-        notification("Erro: need to init", red_color)
-        time.sleep(2)
+        init_compiler = True
         sys.exit(1)
 
-get_extension_file = re.search(r"\.([^.]+)$", args[0]).group(1)
+    except Exception as error:
+        print("Initialization error")
+        init_compiler = False
+        sys.exit(1)
 
-executable = re.match(r"(.+?)(\.[^.]*$|$)", args[0]).group(1)
 
-data_json_file = get_json_file(file_name)
-
-
-if len(sys.argv) < 2 and file_exists(
-        os.path.join(os.getcwd(), args[0])) is not True:
-    notification("Erro: file not found", red_color)
-    time.sleep(2)
+if args.file and file_exists(json_file_name) is not True:
+    parser.parse_args(args.init)
     sys.exit(1)
 else:
-    if get_extension_file != data_json_file["lang"]:
-        notification("Erro: file not found", red_color)
-        time.sleep(2)
+    if args.file and get_extension_file(args.file) != get_json_file(json_file_name)["lang"]:
+        print("Incompatible file type")
         sys.exit(1)
     else:
-        if get_extension_file == data_json_file["lang"]:
-            sorce_code = ""
-            with open(args[0], "r") as file:
-                sorce_code = file.read()
-            compiler_comand = [data_json_file["compiler"],
-                               "-o", executable, sorce_code]
-            compiler(compiler_comand)
+        compiler(args.file)

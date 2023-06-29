@@ -1,0 +1,1 @@
+{ "lang": "c", "compiler": "gcc", "run": "false", "dist": "./bin" }

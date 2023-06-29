@@ -7,6 +7,8 @@ import json
 import re
 import subprocess
 import argparse
+import shutil
+
 
 json_file_name = "simple_builder.json"
 json_file_path = os.path.join(os.getcwd(), json_file_name)
@@ -23,7 +25,6 @@ def notification(message, color):
 
 
 def init_config_file():
-    os.system("clear")
     time.sleep(1)
     data_json = {
         "lang": "c",
@@ -91,6 +92,20 @@ def compiler(file):
     compiler_source(compiler_comand)
 
 
+def move_file(file):
+    executable = get_executable(file)
+    path = file_in_this_directory(executable)
+    new_path = get_json_file(json_file_name)["dist"]
+    os.makedirs(new_path)
+    shutil.move(path, os.path.join(new_path, executable))
+
+
+def run(file):
+    executable = get_executable(file)
+    new_path = get_json_file(json_file_name)["dist"]
+    subprocess.run([os.path.join(new_path, executable)])
+
+
 parser = argparse.ArgumentParser(description="Simple Builder")
 parser.add_argument("-i", "--init", action="store_true",
                     help="Initialize Simple Builder")
@@ -115,7 +130,8 @@ if args.init:
 
 
 if args.file and file_exists(json_file_name) is not True:
-    parser.parse_args(args.init)
+    print("Initialization is necessary!")
+    parser.print_help()
     sys.exit(1)
 else:
     if args.file and get_extension_file(args.file) != get_json_file(json_file_name)["lang"]:
@@ -123,3 +139,6 @@ else:
         sys.exit(1)
     else:
         compiler(args.file)
+        move_file(args.file)
+        if get_json_file(json_file_name)["run"] == "true":
+            run(args.file)

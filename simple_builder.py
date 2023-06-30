@@ -96,7 +96,12 @@ def move_file(file):
     executable = get_executable(file)
     path = file_in_this_directory(executable)
     new_path = get_json_file(json_file_name)["dist"]
-    os.makedirs(new_path)
+    new_file_exists = file_in_this_directory(new_path)
+    if os.path.exists(new_file_exists) and os.path.isdir(new_file_exists):
+        pass
+    else:
+        os.makedirs(new_path)
+
     shutil.move(path, os.path.join(new_path, executable))
 
 
